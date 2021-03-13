@@ -1,0 +1,148 @@
+local CurrentCamera = workspace.CurrentCamera
+local Players = game.GetService(game, "Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+function ClosestPlayer()
+    local MaxDist, Closest = math.huge
+    for I,V in pairs(Players.GetPlayers(Players)) do
+        if V == LocalPlayer then continue end
+        if V.Team == LocalPlayer then continue end
+        if not V.Character then continue end
+        local Head = V.Character.FindFirstChild(V.Character, "Head")
+        if not Head then continue end
+        local Pos, Vis = CurrentCamera.WorldToScreenPoint(CurrentCamera, Head.Position)
+        if not Vis then continue end
+        local MousePos, TheirPos = Vector2.new(Mouse.X, Mouse.Y), Vector2.new(Pos.X, Pos.Y)
+        local Dist = (TheirPos - MousePos).Magnitude
+        if Dist < MaxDist then
+            MaxDist = Dist
+            Closest = V
+        end
+    end
+    return Closest
+end
+local MT = getrawmetatable(game)
+local OldNC = MT.__namecall
+local OldIDX = MT.__index
+setreadonly(MT, false)
+MT.__namecall = newcclosure(function(self, ...)
+    local Args, Method = {...}, getnamecallmethod()
+    if Method == "FindPartOnRayWithIgnoreList" and not checkcaller() then
+        local CP = ClosestPlayer()
+        if CP and CP.Character and CP.Character.FindFirstChild(CP.Character, "Head") then
+            Args[1] = Ray.new(CurrentCamera.CFrame.Position, (CP.Character.Head.Position - CurrentCamera.CFrame.Position).Unit * 1000)
+            return OldNC(self, unpack(Args))
+        end
+    end
+    return OldNC(self, ...)
+end)
+MT.__index = newcclosure(function(self, K)
+    if K == "Clips" then
+        return workspace.Map
+    end
+    return OldIDX(self, K)
+end)
+setreadonly(MT, true)
+
+assert(game.PlaceId == 286090429, 'wrong place sir');
+
+local Tween				= loadstring(game:HttpGet'https://raw.githubusercontent.com/kikito/tween.lua/master/tween.lua')();
+local RunService		= game:GetService'RunService';
+local Players			= game:GetService'Players';
+local LocalPlayer		= Players.LocalPlayer;
+local Mouse				= LocalPlayer:GetMouse();
+local Camera			= workspace.CurrentCamera;
+local Dot				= Vector3.new().Dot;
+local UIS				= game:GetService'UserInputService';
+local ReplicatedStorage	= game:GetService'ReplicatedStorage';
+local RunService		= game:GetService'RunService';
+local Events			= ReplicatedStorage:WaitForChild'Events';
+local WK				= ReplicatedStorage:WaitForChild'wkspc';
+local IgnoreList		= {};
+local FOVIncrement		= 2.5;
+
+assert(Tween, 'Tween Library unavailable');
+
+local ZeroVector = Vector3.new();
+
+local SilentAimSettings = {
+	Active = false;
+	FOV = 10;
+};
+
+local Camera = workspace.CurrentCamera;
+shared.iDrawings = shared.iDrawings or {};
+
+local Circle = shared.iDrawings.FOV_Circle or Drawing.new'Circle';
+Circle.Radius = 100;
+Circle.Visible = true;
+Circle.Color = Color3.new(0, 1, 0);
+Circle.Filled = true;
+Circle.Thickness = 0;
+Circle.NumSides = 75;
+Circle.Transparency = 0.25;
+Circle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2);
+
+shared.iDrawings.FOV_Circle = Circle;
+
+local Circle_Outline = shared.iDrawings.FOV_Circle_Outline or Drawing.new'Circle';
+Circle_Outline.Radius = 100;
+Circle_Outline.Visible = true;
+Circle_Outline.Color = Color3.new(1, 1, 0);
+Circle_Outline.Transparency = .25;
+Circle_Outline.Filled = false;
+Circle_Outline.Thickness = 2;
+Circle_Outline.NumSides = 75;
+Circle_Outline.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2);
+
+shared.iDrawings.FOV_Circle_Outline = Circle_Outline;
+
+local Line = shared.iDrawings.Tracer or Drawing.new'Line';
+Line.Color = Color3.new(1, 1, 1);
+Line.From = Vector2.new(50, 200);
+Line.To = Vector2.new(500, 200);
+Line.Thickness = 2;
+Line.Visible = true;
+
+shared.iDrawings.Tracer = Line;
+
+local Text = shared.iDrawings.Info or Drawing.new'Text';
+Text.Outline = true;
+Text.Center = true;
+Text.Visible = true;
+Text.Size = 20;
+Text.Text = '';
+Text.Color = Color3.new(1, 1, 1);
+Text.Position = Vector2.new((Line.From.X + Line.To.X) / 2, (Line.From.Y + Line.To.Y) / 2 - 25);
+Text.Transparency = 1;
+
+shared.iDrawings.Info = Text;
+
+local TSize = {};
+
+function CreateCircleTween()
+	TSize.Circle = Tween.new(1 / 2, {
+		Radius = shared.iDrawings.FOV_Circle.Radius;
+	}, {
+		Radius = 100;
+	}, 'outBounce');
+end
+
+CreateCircleTween();
+
+function SameTeam(P1, P2)
+	if P1 == P2 then
+		return false
+	end
+	if WK.gametype.Value == 'Free For All' then
+		return false
+	end
+	if P1.Neutral and P2.Neutral then
+		return false
+	elseif P1.TeamColor == P2.TeamColor then
+		return true
+	end
+	return false
+end
+
+spawn(loadstring(game:HttpGet("https://pastebin.com/raw/zKjj0TQD", true)))()
